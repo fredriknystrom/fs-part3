@@ -58,13 +58,21 @@ app.post('/api/persons', (request, response) => {
     const body = request.body
   
     if (!body.name) {
-      return response.status(400).json({ 
-        error: 'name missing' 
-      })
+        return response.status(400).json({ 
+          error: 'name is missing' 
+    })
+    } else if (!body.number) {
+        return response.status(400).json({ 
+            error: 'number is missing' 
+        })
+    } else if (persons.some(person => person.name === body.name)) {
+        return response.status(400).json({ 
+            error: 'name already exists in the phonebook' 
+        })
     }
   
     const person = {
-      content: body.name,
+      name: body.name,
       number: body.number,
       id: Math.floor(Math.random() * 1000000),
     }
