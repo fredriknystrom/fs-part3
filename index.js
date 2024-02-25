@@ -19,31 +19,6 @@ app.use(morgan(function (tokens, req, res) {
     ].join(' ')
   }))
 
-let persons = 
-[
-    { 
-      "id": 1,
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": 2,
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": 3,
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": 4,
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
-
-
 app.get('/api/persons', (request, response) => {
     Person.find({}).then(persons => {
         response.json(persons)
@@ -64,15 +39,20 @@ app.get('/api/persons/:id', (request, response) => {
     })
 })
 
-app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    Person.deleteOne({ id: id })
-        .then(result => {
-            if (result.deletedCount === 0) {
-                return response.status(404).send({ error: 'Person not found' });
+app.delete('/api/persons/:id', (request, response, next) => {
+    Person.findByIdAndDelete(request.params.id)
+        .then(result => { 
+            if (result) {
+                response.status(204).end();
+                console.log("deleted person")
+                console.log(result)
             }
-            response.status(204).end();
+            else {
+                response.status(404).send({ error: 'Person not found' });
+            }
+            
         })
+        .catch(error => next(error))
 })
 
 app.post('/api/persons', (request, response) => {
@@ -100,10 +80,10 @@ app.post('/api/persons', (request, response) => {
         id: Math.floor(Math.random() * 1000000),
     })
 
-    console.log(person)
-
     person.save().then(savedPerson => {
         response.json(savedPerson)
+        console.log("added new person")
+        console.log(person)
         })
   })
 
