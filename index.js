@@ -61,7 +61,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
         .catch(error => next(error))
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
   
     if (body.name === undefined) {
@@ -69,14 +69,10 @@ app.post('/api/persons', (request, response) => {
              error: 'name is missing' 
         })
       } 
+
     else if (body.number === undefined) {
         return response.status(400).json({ 
             error: 'number is missing' 
-        })
-    } 
-    else if (persons.some(person => person.name === body.name)) {
-        return response.status(400).json({ 
-            error: 'name already exists in the phonebook' 
         })
     }
   
@@ -91,9 +87,10 @@ app.post('/api/persons', (request, response) => {
         console.log("added new person")
         console.log(person)
     })
+    .catch(error => next(error))
 })
 
-app.put('/api/persons/:id', (request, response) => {
+app.put('/api/persons/:id', (request, response, next) => {
     const id = request.params.id
     const body = request.body
 
@@ -102,7 +99,7 @@ app.put('/api/persons/:id', (request, response) => {
         number: body.number,
     };
 
-    Person.findByIdAndUpdate(id, personUpdate, { new: true})
+    Person.findByIdAndUpdate(id, personUpdate, {new: true, runValidators: true, context: 'query'})
         .then(updatedPerson => {
             if (updatedPerson) {
                 response.json(updatedPerson)
@@ -124,7 +121,9 @@ const errorHandler = (error, request, response, next) => {
     console.error(error.message)
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
-    } 
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message})
+    }
     next(error)
 }
 
