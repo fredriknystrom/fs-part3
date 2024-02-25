@@ -33,10 +33,16 @@ app.get('/api/info', (request, response) => {
     })
 })
 
-app.get('/api/persons/:id', (request, response) => {
-    Person.findById(request.params.id).then(person => {
-        response.json(person)
+app.get('/api/persons/:id', (request, response, next) => {
+    const id = request.params.id
+    Person.findById(id).then(person => {
+        if (person) {
+            response.json(person)
+        } else {
+            response.status(404).end()
+        }
     })
+    .catch(error => next(error))
 })
 
 app.delete('/api/persons/:id', (request, response, next) => {
@@ -84,8 +90,45 @@ app.post('/api/persons', (request, response) => {
         response.json(savedPerson)
         console.log("added new person")
         console.log(person)
+    })
+})
+
+app.put('/api/persons/:id', (request, response) => {
+    const id = request.params.id
+    const body = request.body
+
+    const personUpdate = {
+        name: body.name,
+        number: body.number,
+    };
+
+    Person.findByIdAndUpdate(id, personUpdate, { new: true})
+        .then(updatedPerson => {
+            if (updatedPerson) {
+                response.json(updatedPerson)
+            }
         })
-  })
+        .catch(error => next(error))
+})
+
+// Handling requests with unknown endpoint
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({ error: 'unknown endpoint' })
+}
+  
+app.use(unknownEndpoint)
+
+
+// Middleware for error handling
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    } 
+    next(error)
+}
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
