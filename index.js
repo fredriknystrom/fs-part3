@@ -1,7 +1,9 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const app = express()
+const Person = require('./models/person')
 
 app.use(express.json())
 app.use(express.static('dist'))
@@ -43,63 +45,69 @@ let persons =
 
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+    Person.find({}).then(persons => {
+        response.json(persons)
+    })
 })
 
 app.get('/api/info', (request, response) => {
-    const info = `Phonebook has info for ${persons.length} people`
-    const currentDate = new Date()
-    response.send(`<p>${info}<br/>${currentDate}<\p>`)
-  })
+    Person.find({}).then(persons => {
+        const info = `Phonebook has info for ${persons.length} people`
+        const currentDate = new Date()
+        response.send(`<p>${info}<br/>${currentDate}<\p>`)
+    })
+})
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    console.log(id)
-    const person = persons.find(p => p.id === id)
-    if (person) {
+    Person.findById(request.params.id).then(person => {
         response.json(person)
-    } else {
-        response.status(404).end()
-    }
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
-    persons = persons.filter(note => note.id !== id)
-    response.status(204).end()
+    Person.deleteOne({ id: id })
+        .then(result => {
+            if (result.deletedCount === 0) {
+                return response.status(404).send({ error: 'Person not found' });
+            }
+            response.status(204).end();
+        })
 })
 
 app.post('/api/persons', (request, response) => {
     const body = request.body
   
-    if (!body.name) {
-        return response.status(400).json({ 
-          error: 'name is missing' 
-    })
-    } else if (!body.number) {
+    if (body.name === undefined) {
+        return response.status(400).json({
+             error: 'name is missing' 
+        })
+      } 
+    else if (body.number === undefined) {
         return response.status(400).json({ 
             error: 'number is missing' 
         })
-    } else if (persons.some(person => person.name === body.name)) {
+    } 
+    else if (persons.some(person => person.name === body.name)) {
         return response.status(400).json({ 
             error: 'name already exists in the phonebook' 
         })
     }
   
-    const person = {
-      name: body.name,
-      number: body.number,
-      id: Math.floor(Math.random() * 1000000),
-    }
-  
-    persons = persons.concat(person)
-  
-    response.json(person)
+    const person = new Person({
+        name: body.name,
+        number: body.number,
+        id: Math.floor(Math.random() * 1000000),
+    })
+
+    console.log(person)
+
+    person.save().then(savedPerson => {
+        response.json(savedPerson)
+        })
   })
 
-
-
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
