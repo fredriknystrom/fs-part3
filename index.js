@@ -29,7 +29,7 @@ app.get('/api/info', (request, response) => {
     Person.find({}).then(persons => {
         const info = `Phonebook has info for ${persons.length} people`
         const currentDate = new Date()
-        response.send(`<p>${info}<br/>${currentDate}<\p>`)
+        response.send(`<p>${info}<br/>${currentDate}<p>`)
     })
 })
 
@@ -49,12 +49,12 @@ app.delete('/api/persons/:id', (request, response, next) => {
     Person.findByIdAndDelete(request.params.id)
         .then(result => { 
             if (result) {
-                response.status(204).end();
+                response.status(204).end()
                 console.log("deleted person")
                 console.log(result)
             }
             else {
-                response.status(404).send({ error: 'Person not found' });
+                response.status(404).send({ error: 'Person not found' })
             }
             
         })
@@ -97,7 +97,7 @@ app.put('/api/persons/:id', (request, response, next) => {
     const personUpdate = {
         name: body.name,
         number: body.number,
-    };
+    }
 
     Person.findByIdAndUpdate(id, personUpdate, {new: true, runValidators: true, context: 'query'})
         .then(updatedPerson => {
@@ -121,7 +121,8 @@ const errorHandler = (error, request, response, next) => {
     console.error(error.message)
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
-    } else if (error.name === 'ValidationError') {
+    } 
+    if (error.name === 'ValidationError') {
         return response.status(400).json({ error: error.message})
     }
     next(error)
